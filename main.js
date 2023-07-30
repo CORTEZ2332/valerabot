@@ -56,8 +56,16 @@ const commands = {
         '!паспорт - Кидает список игроков с паспортом',
         '!логи - Показывает логи игроков сервера.  Работает только в канале https://discord.com/channels/975678659631382548/1135209701844455464',
         '!статс - Показывает статистику игрока.  Работает только в канале https://discord.com/channels/975678659631382548/1135221954295636028',
+        '!едитстатс - Редактирует статистику игрока.  Работает только в канале https://discord.com/channels/975678659631382548/1135221954295636028',
         '!сетадмин - Выдача админ прав в игре. Работает только в канале https://discord.com/channels/975678659631382548/1135228797378105445',
         '!сетфд - Выдача ФД прав в игре. Работает только в канале https://discord.com/channels/975678659631382548/1135228797378105445',
+        '!бан - Выдача блокировки игроку. Работает только в канале https://discord.com/channels/975678659631382548/1135261560596611222',
+        '!разбан - Разбанить игрока. Работает только в канале https://discord.com/channels/975678659631382548/1135261560596611222',
+        '!блист - Бан лист.',
+        '!дом - Увидить информацию о доме. Работает только в канале https://discord.com/channels/975678659631382548/1135273027525951549',
+        '!бизнес -Увидеть информацию о бизнесе. Работает только в канале https://discord.com/channels/975678659631382548/1135273027525951549',
+        '!едитдом - Изменить владельца дома. Работает только в канале https://discord.com/channels/975678659631382548/1135273027525951549',
+        '!едитбизнес - Изменить владельца бизнеса. Работает только в канале https://discord.com/channels/975678659631382548/1135273027525951549',
         // Добавьте другие команды здесь
       ];
   
@@ -72,6 +80,551 @@ const commands = {
       message.channel.send(embed);
     }
   });
+client.on('message', async message => {
+  if (message.content.startsWith('!запрос')) {
+    const args = message.content.split(' ');
+    const command = args[0];
+    const userMention = message.mentions.users.first();
+    const position = args[2];
+    const roleMention = message.mentions.roles.first();
+    
+    if (!userMention || !position || !roleMention) {
+      message.channel.send('Использование команды: !запрос [@пользователь][Ваша Должность] [@Запрашиваемая роль]');
+      return;
+    }
+
+    // Отправляем запрос в указанный канал
+    const channelToSend = client.channels.cache.get('975681053874331670'); // Здесь замените на ID канала, куда нужно отправить запрос
+    if (!channelToSend) {
+      message.channel.send('Не удалось найти указанный канал для отправки запроса.');
+      return;
+    }
+
+    const sentMessage = await channelToSend.send(`${message.author} хочет получить роль ${roleMention} для должности "${position}" для пользователя ${userMention}. Подтвердите или откажите в выдаче роли.`);
+
+    // Добавляем реакции подтверждения и отказа
+    await sentMessage.react('✅'); // Подтвердить
+    await sentMessage.react('❌'); // Отказать
+
+    // Ожидаем ответа от определенного пользователя
+    const filter = (reaction, user) => (reaction.emoji.name === '✅' || reaction.emoji.name === '❌') && user.id === message.author.id;
+    const collector = sentMessage.createReactionCollector(filter, { max: 1, time: 15000 }); // Ожидаем только 1 ответ в течение 15 секунд
+
+    collector.on('collect', async (reaction, user) => {
+      if (reaction.emoji.name === '✅') {
+        // Одобряем запрос и отправляем сообщение в другой канал
+        const otherChannel = client.channels.cache.get('1135237763931832351'); // Здесь замените на ID другого канала
+
+        // Выдаем роль пользователю
+        const memberToGrant = message.guild.members.cache.get(userMention.id);
+        if (!memberToGrant) {
+          message.channel.send('Не удалось найти пользователя на сервере.');
+          return;
+        }
+
+        try {
+          await memberToGrant.roles.add(roleMention);
+          message.channel.send(`${user} одобрил ваш запрос. Роль ${roleMention} выдана пользователю ${userMention}.`);
+        } catch (error) {
+          message.channel.send('Произошла ошибка при выдаче роли.');
+        }
+      } else if (reaction.emoji.name === '❌') {
+        // Отказываем в запросе
+        message.channel.send(`${user} отклонил ваш запрос.`);
+      }
+    });
+
+    collector.on('end', collected => {
+      if (collected.size === 0) {
+        message.channel.send('Время ожидания ответа истекло. Запрос не был одобрен или отклонен.');
+      }
+    });
+  }
+});
+
+  client.on('message', message => {
+    if (message.author.bot) return;
+  
+    if (message.content.startsWith('!1')) {
+      message.channel.send('Бот Работает!');
+    }
+  });
+  
+  client.on('message', message => {
+    if (message.author.bot) return;
+  
+    // Проверяем ID канала
+    const channelId = '1135270157351125114'; // Здесь замените на ожидаемый ID канала
+    if (message.channel.id !== channelId) {
+      return; // Бот не будет выполнять команду в других каналах
+    }
+  
+    if (message.content.startsWith('!пасс')) {
+      const args = message.content.split(' '); // Разделяем сообщение на аргументы по пробелу
+      const command = args[0]; // Первый аргумент - команда
+      const nickName = args[1]; // Второй аргумент - ник нейм
+  
+      // Проверяем, указан ли ник нейм
+      if (!nickName) {
+        message.channel.send('Укажите NickName игрока для поиска информации.');
+        return;
+      }
+  
+      // Выполняем запрос к базе данных для поиска информации по ник нейму
+      connection.query(
+        'SELECT NickName, Password, RegIP, APass FROM Qelksekm WHERE NickName = ?',
+        [nickName],
+        (err, rows) => {
+          if (err) {
+            console.error('Ошибка при выполнении запроса: ', err);
+            message.channel.send('Произошла ошибка при поиске информации в базе данных.');
+            return;
+          }
+  
+          // Проверяем, найден ли игрок
+          if (rows.length === 0) {
+            message.channel.send(`Игрок с NickName "${nickName}" не найден.`);
+            return;
+          }
+  
+          // Получаем информацию о найденном игроке
+          const playerInfo = rows[0];
+  
+          // Формируем сообщение с информацией о найденном игроке
+          let playerInfoMessage = `Информация об игроке: ${playerInfo.NickName}\n`;
+          playerInfoMessage += `Пароль (Password): ${playerInfo.Password}\n`;
+          playerInfoMessage += `Регистрационный IP (RegIP): ${playerInfo.RegIP}\n`;
+          playerInfoMessage += `Админ пароль: ${playerInfo.APass}`;
+  
+          message.channel.send(playerInfoMessage);
+        }
+      );
+    }
+  });
+  client.on('message', message => {
+    if (message.author.bot) return;
+  
+    // Проверяем ID канала
+    const channelId = '1135273027525951549'; // Здесь замените на ожидаемый ID канала
+    if (message.channel.id !== channelId) {
+      return; // Бот не будет выполнять команду в других каналах
+    }
+  
+    if (message.content.startsWith('!дом')) {
+      const args = message.content.split(' '); // Разделяем сообщение на аргументы по пробелу
+      const command = args[0]; // Первый аргумент - команда
+      const houseId = args[1]; // Второй аргумент - ID дома
+  
+      // Проверяем, указан ли ID дома
+      if (!houseId) {
+        message.channel.send('Использование команды: !дом [ID Дома]');
+        return;
+      }
+  
+      // Выполняем запрос к базе данных для поиска дома по его ID
+      connection.query(
+        'SELECT Owner, Level, Cost, Nalog, Garage, Item FROM Houses WHERE ID = ?',
+        [houseId],
+        (err, rows) => {
+          if (err) {
+            console.error('Ошибка при выполнении запроса: ', err);
+            message.channel.send('Произошла ошибка при поиске дома.');
+            return;
+          }
+  
+          // Проверяем, найден ли дом
+          if (rows.length === 0) {
+            message.channel.send(`Дом с ID "${houseId}" не найден.`);
+            return;
+          }
+  
+          // Получаем информацию о найденном доме
+          const houseInfo = rows[0];
+  
+          // Формируем сообщение с информацией о доме
+          let houseMessage = `Информация о доме с ID "${houseId}":\n`;
+          houseMessage += `Владелец: ${houseInfo.Owner}\n`;
+          houseMessage += `Уровень: ${houseInfo.Level}\n`;
+          houseMessage += `Стоимость: ${houseInfo.Cost}\n`;
+          houseMessage += `Налог: ${houseInfo.Nalog}\n`;
+          houseMessage += `Гараж: ${houseInfo.Garage}\n`;
+          houseMessage += `Предметы: ${houseInfo.Item}\n`;
+  
+          message.channel.send(houseMessage);
+        }
+      );
+    }
+  
+    if (message.content.startsWith('!бизнес')) {
+      const args = message.content.split(' '); // Разделяем сообщение на аргументы по пробелу
+      const command = args[0]; // Первый аргумент - команда
+      const businessId = args[1]; // Второй аргумент - ID бизнеса
+  
+      // Проверяем, указан ли ID бизнеса
+      if (!businessId) {
+        message.channel.send('Использование команды: !бизнес [ID Бизнеса]');
+        return;
+      }
+  
+      // Выполняем запрос к базе данных для поиска бизнеса по его ID
+      connection.query(
+        'SELECT State, Name, Owner, Cost, Level, Money FROM Businesses WHERE ID = ?',
+        [businessId],
+        (err, rows) => {
+          if (err) {
+            console.error('Ошибка при выполнении запроса: ', err);
+            message.channel.send('Произошла ошибка при поиске бизнеса.');
+            return;
+          }
+  
+          // Проверяем, найден ли бизнес
+          if (rows.length === 0) {
+            message.channel.send(`Бизнес с ID "${businessId}" не найден.`);
+            return;
+          }
+  
+          // Получаем информацию о найденном бизнесе
+          const businessInfo = rows[0];
+  
+          // Формируем сообщение с информацией о бизнесе
+          let businessMessage = `Информация о бизнесе с ID "${businessId}":\n`;
+          businessMessage += `Состояние: ${businessInfo.State}\n`;
+          businessMessage += `Название: ${businessInfo.Name}\n`;
+          businessMessage += `Владелец: ${businessInfo.Owner}\n`;
+          businessMessage += `Стоимость: ${businessInfo.Cost}\n`;
+          businessMessage += `Уровень: ${businessInfo.Level}\n`;
+          businessMessage += `Деньги: ${businessInfo.Money}\n`;
+  
+          message.channel.send(businessMessage);
+        }
+      );
+    }
+  
+    if (message.content.startsWith('!едитдом')) {
+      const args = message.content.split(' '); // Разделяем сообщение на аргументы по пробелу
+      const command = args[0]; // Первый аргумент - команда
+      const houseId = args[1]; // Второй аргумент - ID дома
+      const newOwner = args[2]; // Третий аргумент - новый владелец (Nick_Name)
+  
+      // Проверяем, указаны ли все аргументы
+      if (!houseId || !newOwner) {
+        message.channel.send('Использование команды: !едитдом [ID Дома] [Ник нового владельца]');
+        return;
+      }
+  
+      // Выполняем запрос к базе данных для обновления владельца дома по его ID
+      connection.query(
+        'UPDATE Houses SET Owner = ? WHERE ID = ?',
+        [newOwner, houseId],
+        (err) => {
+          if (err) {
+            console.error('Ошибка при выполнении запроса: ', err);
+            message.channel.send('Произошла ошибка при редактировании информации в базе данных.');
+            return;
+          }
+  
+          // Отправляем сообщение об успешном редактировании информации
+          message.channel.send(`Информация о доме с ID "${houseId}" успешно отредактирована. Новый владелец: ${newOwner}.`);
+        }
+      );
+    }
+  
+    if (message.content.startsWith('!едитбиз')) {
+      const args = message.content.split(' '); // Разделяем сообщение на аргументы по пробелу
+      const command = args[0]; // Первый аргумент - команда
+      const businessId = args[1]; // Второй аргумент - ID бизнеса
+      const newOwner = args[2]; // Третий аргумент - новый владелец (Nick_Name)
+  
+      // Проверяем, указаны ли все аргументы
+      if (!businessId || !newOwner) {
+        message.channel.send('Использование команды: !едитбиз [ID Бизнеса] [Ник нового владельца бизнеса]');
+        return;
+      }
+  
+      // Выполняем запрос к базе данных для обновления владельца бизнеса по его ID
+      connection.query(
+        'UPDATE Businesses SET Owner = ? WHERE ID = ?',
+        [newOwner, businessId],
+        (err) => {
+          if (err) {
+            console.error('Ошибка при выполнении запроса: ', err);
+            message.channel.send('Произошла ошибка при редактировании информации в базе данных.');
+            return;
+          }
+  
+          // Отправляем сообщение об успешном редактировании информации
+          message.channel.send(`Информация о бизнесе с ID "${businessId}" успешно отредактирована. Новый владелец: ${newOwner}.`);
+        }
+      );
+    }
+  });
+  
+  client.on('message', message => {
+    if (message.author.bot) return;
+  
+    // Проверяем ID канала
+    const channelId = '1135270157351125114'; // Здесь замените на ожидаемый ID канала
+    if (message.channel.id !== channelId) {
+      return; // Бот не будет выполнять команду в других каналах
+    }
+  
+    if (message.content.startsWith('!едитпасс')) {
+      const args = message.content.split(' '); // Разделяем сообщение на аргументы по пробелу
+      const command = args[0]; // Первый аргумент - команда
+      const nickName = args[1]; // Второй аргумент - ник нейм
+      const password = args[2]; // Третий аргумент - новый пароль (Password)
+      const aPass = args[3]; // Четвертый аргумент - новое значение APass
+  
+      // Проверяем, указаны ли все аргументы
+      if (!nickName || !password || !aPass) {
+        message.channel.send('Использование команды: !едитпасс [Nick_Name] [Новый Пароль] [Новый Админ пароль]');
+        return;
+      }
+  
+      // Выполняем запрос к базе данных для обновления значений Password и APass для указанного ник нейма
+      connection.query(
+        'UPDATE Qelksekm SET Password = ?, APass = ? WHERE NickName = ?',
+        [password, aPass, nickName],
+        (err) => {
+          if (err) {
+            console.error('Ошибка при выполнении запроса: ', err);
+            message.channel.send('Произошла ошибка при редактировании информации в базе данных.');
+            return;
+          }
+  
+          // Отправляем сообщение об успешном редактировании информации
+          message.channel.send(`Информация для игрока ${nickName} успешно отредактирована.`);
+        }
+      );
+    }
+  });
+  
+  client.on('message', message => {
+    const channelId = '1135261560596611222'; // Здесь замените на ожидаемый ID канала
+    if (message.channel.id !== channelId) {
+      return;
+    }
+
+    if (message.author.bot) return;
+    if (message.content.startsWith('!бан')) {
+      const args = message.content.split(' '); // Разделяем сообщение на аргументы по пробелу
+      const command = args[0]; // Первый аргумент - команда
+      const nickName = args[1]; // Второй аргумент - ник нейм (Name)
+      const banReason = args[2]; // Третий аргумент - причина блокировки (BanReason)
+      const banSeconds = parseInt(args[3]); // Четвертый аргумент - время блокировки в секундах (BanSeconds)
+  
+      // Проверяем, указаны ли все аргументы
+      if (!nickName || !banReason || isNaN(banSeconds)) {
+        message.channel.send('Использование команды: !бан [Nick Name] [Причина блокировки] [Время блокировки в секундах]');
+        return;
+      }
+  
+      // Форматируем время блокировки в формат YYYY-MM-DD HH:mm:ss
+      const banDate = new Date(Date.now() + banSeconds * 1000).toISOString().slice(0, 19).replace('T', ' ');
+  
+      // Выполняем запрос к базе данных для добавления записи о бане
+      const query = `INSERT INTO BanNames (Name, BanReason, BanSeconds, BanAdmin, BanDate) VALUES (?, ?, ?, ?, ?)`;
+      connection.query(query, [nickName, banReason, banSeconds, 'BotValera', banDate], (err, result) => {
+        if (err) {
+          console.error('Ошибка при выполнении запроса: ', err);
+          return;
+        }
+  
+        message.channel.send(`Игрок "${nickName}" был забанен. Причина: "${banReason}", Время блокировки: "${banSeconds}" секунд(ы)".`);
+      });
+    }
+  });  
+  client.on('message', message => {
+    if (message.author.bot) return;
+  
+    // Проверяем ID канала
+    const channelId = '1135261560596611222'; // Здесь замените на ожидаемый ID канала
+    if (message.channel.id !== channelId) {
+      return;
+    }
+if (message.content.startsWith('!банлист')) {
+    // Выполняем запрос к базе данных для получения информации о забаненных игроках
+    connection.query(
+      'SELECT NickName, BanReason, BanSeconds, BanAdmin, BanDate FROM BanNames',
+      (err, rows) => {
+        if (err) {
+          console.error('Ошибка при выполнении запроса: ', err);
+          message.channel.send('Произошла ошибка при получении информации о банах.');
+          return;
+        }
+
+        // Проверяем, есть ли забаненные игроки
+        if (rows.length === 0) {
+          message.channel.send('Список забаненных игроков пуст.');
+          return;
+        }
+
+        // Формируем сообщение с информацией о забаненных игроках
+        let banListMessage = 'Список забаненных игроков:\n\n';
+        for (const row of rows) {
+          const banDateFormatted = row.BanDate.toISOString().slice(0, 19).replace('T', ' ');
+          banListMessage += `Ник нейм: ${row.NickName}\n`;
+          banListMessage += `Причина блокировки: ${row.BanReason}\n`;
+          banListMessage += `Время блокировки (в секундах): ${row.BanSeconds}\n`;
+          banListMessage += `Администратор, выдавший бан: ${row.BanAdmin}\n`;
+          banListMessage += `Дата блокировки: ${banDateFormatted}\n\n`;
+        }
+
+        message.channel.send(banListMessage, { split: true });
+      }
+    );
+  }
+});
+client.on('message', message => {
+  if (message.author.bot) return;
+
+  // Проверяем ID канала
+  const channelId = '1135221954295636028'; // Здесь замените на ожидаемый ID канал
+
+  if (message.content.startsWith('!блист')) {
+    // Выполняем запрос к базе данных для получения списка заблокированных игроков
+    connection.query(
+      'SELECT Name, BanReason, BanSeconds, BanAdmin, BanDate FROM BanNames',
+      (err, rows) => {
+        if (err) {
+          console.error('Ошибка при выполнении запроса: ', err);
+          message.channel.send('Произошла ошибка при получении списка заблокированных игроков.');
+          return;
+        }
+
+        // Проверяем, есть ли заблокированные игроки
+        if (rows.length === 0) {
+          message.channel.send('Список заблокированных игроков пуст.');
+          return;
+        }
+
+        // Формируем сообщение с информацией о заблокированных игроках
+        let banListMessage = 'Список заблокированных игроков:\n\n';
+        rows.forEach(row => {
+          banListMessage += `Ник нейм: ${row.Name}\n`;
+          banListMessage += `Причина блокировки: ${row.BanReason}\n`;
+          banListMessage += `Время блокировки (в секундах): ${row.BanSeconds}\n`;
+          banListMessage += `Админ, выдавший бан: ${row.BanAdmin}\n`;
+          banListMessage += `Дата блокировки: ${row.BanDate}\n\n`;
+        });
+
+        message.channel.send(banListMessage);
+      }
+    );
+
+    return;
+  }
+
+  // Остальные команды...
+});
+client.on('message', message => {
+  if (message.author.bot) return;
+
+  // Проверяем ID канала
+  const channelId = '1135261560596611222'; // Здесь замените на ожидаемый ID канала
+  if (message.channel.id !== channelId) {
+    return; // Бот не будет выполнять команду в других каналах
+  }
+
+  if (message.content.startsWith('!разбан')) {
+    const args = message.content.split(' '); // Разделяем сообщение на аргументы по пробелу
+    const command = args[0]; // Первый аргумент - команда
+    const name = args[1]; // Второй аргумент - ник нейм
+
+    // Проверяем, указано ли имя игрока
+    if (!name) {
+      message.channel.send('Укажите Name игрока для разблокировки.');
+      return;
+    }
+
+    // Выполняем запрос к базе данных для разблокировки игрока
+    connection.query(
+      'DELETE FROM BanNames WHERE Name = ?',
+      [name],
+      (err, result) => {
+        if (err) {
+          console.error('Ошибка при выполнении запроса: ', err);
+          message.channel.send('Произошла ошибка при разблокировке игрока.');
+          return;
+        }
+
+        if (result.affectedRows > 0) {
+          // Игрок был успешно разблокирован
+          message.channel.send(`Игрок с Name "${name}" был успешно разблокирован.`);
+        } else {
+          // Игрок с указанным именем не найден в списке заблокированных
+          message.channel.send(`Игрок с Name "${name}" не найден в списке заблокированных.`);
+        }
+      }
+    );
+
+    return;
+  }
+
+  // Остальные команды...
+});
+
+
+  client.on('message', message => {
+    if (message.author.bot) return;
+  
+    // Проверяем ID канала
+    const channelId = '1135221954295636028'; // Здесь замените на ожидаемый ID канала
+    if (message.channel.id !== channelId) {
+      return;
+    }
+  
+    if (message.content.startsWith('!статс')) {
+      // ... (existing !статс command code, skipped for brevity)
+      return;
+    }
+  
+    if (message.content.startsWith('!едитстатс')) {
+      const args = message.content.split(' '); // Разделяем сообщение на аргументы по пробелу
+      const command = args[0]; // Первый аргумент - команда
+      const nickName = args[1]; // Второй аргумент - ник нейм
+  
+      // Проверяем, указан ли ник нейм
+      if (!nickName) {
+        message.channel.send('Укажите NickName игрока для редактирования статистики.');
+        return;
+      }
+  
+      // Проверяем, есть ли еще аргументы (поля для редактирования)
+      if (args.length < 3) {
+        message.channel.send('Укажите поля для редактирования (Level, Money, Bank, DonateMoney, VirMoney) и новые значения через пробел.');
+        message.channel.send('Пример команды: !едитстатс Manuel_Cortez Money 20502350');
+        return;
+      }
+  
+      const fieldToUpdate = args[2].toLowerCase();
+      const newValue = args[3];
+  
+      // Проверяем, поддерживается ли указанное поле для редактирования
+      const supportedFields = ['level', 'admin', 'fulldostup', 'money', 'bank', 'donatemoney', 'virmoney'];
+      if (!supportedFields.includes(fieldToUpdate)) {
+        message.channel.send('Указанное поле для редактирования не поддерживается. Поддерживаемые поля: Level, Money, Bank, DonateMoney, VirMoney.');
+        return;
+      }
+  
+      // Выполняем запрос к базе данных для обновления значения статистики игрока
+      const query = `UPDATE Qelksekm SET ${fieldToUpdate} = ? WHERE NickName = ?`;
+      connection.query(query, [newValue, nickName], (err, result) => {
+        if (err) {
+          console.error('Ошибка при выполнении запроса: ', err);
+          return;
+        }
+  
+        if (result.affectedRows === 0) {
+          message.channel.send(`Игрок с NickName "${nickName}" не найден.`);
+          return;
+        }
+  
+        message.channel.send(`Статистика игрока ${nickName} была успешно обновлена. Поле "${fieldToUpdate}" изменено на "${newValue}".`);
+      });
+    }
+  });
+  
   client.on('message', message => {
     if (message.author.bot) return;
   
@@ -133,29 +686,40 @@ const commands = {
   });
   client.on('message', message => {
     if (message.author.bot) return;
-
-  // Проверяем ID канала
-  const channelId = '1135228797378105445'; // Здесь замените на ожидаемый ID канала
-  if (message.channel.id !== channelId) {
-    return; // Бот не будет выполнять команду в других каналах
-  }
+  
+    // Проверяем ID канала
+    const channelId = '1135228797378105445'; // Здесь замените на ожидаемый ID канала
+    if (message.channel.id !== channelId) {
+      return; // Бот не будет выполнять команду в других каналах
+    }
+  
+    // Проверяем, имеет ли пользователь роли
+    const hasMaxAdminRole = message.member.roles.cache.has('975678764900040704');
+    const hasLimitedAdminRole = message.member.roles.cache.has('1135229333624082512');
   
     if (message.content.startsWith('!сетадмин')) {
       const args = message.content.split(' '); // Разделяем сообщение на аргументы по пробелу
       const command = args[0]; // Первый аргумент - команда
       const nickName = args[1]; // Второй аргумент - ник нейм
-      const adminLevel = parseInt(args[2]); // Третий аргумент - уровень админки (число)
+      let adminLevel = parseInt(args[2]); // Третий аргумент - уровень админки (число)
   
       // Проверяем, указаны ли все аргументы
       if (!nickName || isNaN(adminLevel)) {
-        message.channel.send('Использование команды: !сетадмин Nick_Name Уровень Админки (0-9)');
+        message.channel.send('Использование команды: !сетадмин Nick_Name Уровень Админки (0-8) (Если у вас роль A то максимум 9)');
         return;
       }
   
       // Проверяем, что уровень админки находится в диапазоне от 0 до 9
       if (adminLevel < 0 || adminLevel > 9) {
-        message.channel.send('Уровень админки должен быть числом от 0 до 9.');
+        message.channel.send('Уровень админки должен быть числом от 0 до 8.(Если у вас роль A то максимум 9)');
         return;
+      }
+  
+      // Ограничиваем уровень админки в зависимости от роли
+      if (hasMaxAdminRole && adminLevel > 9) {
+        adminLevel = 9;
+      } else if (hasLimitedAdminRole && adminLevel > 8) {
+        adminLevel = 8;
       }
   
       // Выполняем запрос к базе данных для поиска игрока по ник нейму
@@ -196,63 +760,73 @@ const commands = {
       );
     }
   
-    if (message.content.startsWith('!сетфд')) {
-      const args = message.content.split(' '); // Разделяем сообщение на аргументы по пробелу
-      const command = args[0]; // Первый аргумент - команда
-      const nickName = args[1]; // Второй аргумент - ник нейм
-      const fullDostupLevel = parseInt(args[2]); // Третий аргумент - уровень FullDostup (число)
   
-      // Проверяем, указаны ли все аргументы
-      if (!nickName || isNaN(fullDostupLevel)) {
-        message.channel.send('Использование команды: !сетфд Nick_Name Уровень FD ()');
-        return;
-      }
-  
-      // Проверяем, что уровень FullDostup находится в диапазоне от 0 до 9
-      if (fullDostupLevel < 0 || fullDostupLevel > 6) {
-        message.channel.send('Уровень FullDostup должен быть числом от 0 до 6.');
-        return;
-      }
-  
-      // Выполняем запрос к базе данных для поиска игрока по ник нейму
-      connection.query(
-        'SELECT NickName, FullDostup FROM Qelksekm WHERE NickName = ?',
-        [nickName],
-        (err, rows) => {
-          if (err) {
-            console.error('Ошибка при выполнении запроса: ', err);
-            return;
-          }
-  
-          // Проверяем, найден ли игрок
-          if (rows.length === 0) {
-            message.channel.send(`Игрок с NickName "${nickName}" не найден.`);
-            return;
-          }
-  
-          // Получаем информацию о найденном игроке
-          const playerInfo = rows[0];
-          const previousFullDostupLevel = playerInfo.FullDostup; // Сохраняем предыдущий уровень FullDostup
-  
-          // Выполняем запрос к базе данных для обновления значения FullDostup игрока
-          connection.query(
-            'UPDATE Qelksekm SET FullDostup = ? WHERE NickName = ?',
-            [fullDostupLevel, nickName],
-            (err) => {
-              if (err) {
-                console.error('Ошибка при выполнении запроса: ', err);
-                return;
-              }
-  
-              // Отправляем сообщение о выдаче FullDostup игроку
-              message.channel.send(`${message.author}, выдал FullDostup игроку ${playerInfo.NickName} (Предыдущий уровень FullDostup: ${previousFullDostupLevel}, Новый уровень FullDostup: ${fullDostupLevel}).`);
-            }
-          );
+    
+      // Проверяем, имеет ли пользователь требуемую роль
+      const requiredRoleId = '975678764900040704'; // Здесь замените на ID требуемой роли
+      const hasRequiredRole = message.member.roles.cache.has(requiredRoleId);
+    
+      if (message.content.startsWith('!сетфд')) {
+        if (!hasRequiredRole) {
+          return;
         }
-      );
-    }
-});
-  
+    
+        const args = message.content.split(' '); // Разделяем сообщение на аргументы по пробелу
+        const command = args[0]; // Первый аргумент - команда
+        const nickName = args[1]; // Второй аргумент - ник нейм
+        const fullDostupLevel = parseInt(args[2]); // Третий аргумент - уровень FullDostup (число)
+    
+        // Проверяем, указаны ли все аргументы
+        if (!nickName || isNaN(fullDostupLevel)) {
+          message.channel.send('Использование команды: !сетфд Nick_Name Уровень FD ()');
+          return;
+        }
+    
+        // Проверяем, что уровень FullDostup находится в диапазоне от 0 до 9
+        if (fullDostupLevel < 0 || fullDostupLevel > 6) {
+          message.channel.send('Уровень FullDostup должен быть числом от 0 до 6.');
+          return;
+        }
+    
+        // Выполняем запрос к базе данных для поиска игрока по ник нейму
+        connection.query(
+          'SELECT NickName, FullDostup FROM Qelksekm WHERE NickName = ?',
+          [nickName],
+          (err, rows) => {
+            if (err) {
+              console.error('Ошибка при выполнении запроса: ', err);
+              return;
+            }
+    
+            // Проверяем, найден ли игрок
+            if (rows.length === 0) {
+              message.channel.send(`Игрок с NickName "${nickName}" не найден.`);
+              return;
+            }
+    
+            // Получаем информацию о найденном игроке
+            const playerInfo = rows[0];
+            const previousFullDostupLevel = playerInfo.FullDostup; // Сохраняем предыдущий уровень FullDostup
+    
+            // Выполняем запрос к базе данных для обновления значения FullDostup игрока
+            connection.query(
+              'UPDATE Qelksekm SET FullDostup = ? WHERE NickName = ?',
+              [fullDostupLevel, nickName],
+              (err) => {
+                if (err) {
+                  console.error('Ошибка при выполнении запроса: ', err);
+                  return;
+                }
+    
+                // Отправляем сообщение о выдаче FullDostup игроку
+                message.channel.send(`${message.author}, выдал FullDostup игроку ${playerInfo.NickName} (Предыдущий уровень FullDostup: ${previousFullDostupLevel}, Новый уровень FullDostup: ${fullDostupLevel}).`);
+              }
+            );
+          }
+        );
+      }
+    });
+      
 
 
 

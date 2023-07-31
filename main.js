@@ -43,7 +43,6 @@ const commands = {
     // Добавьте другие команды и их описания здесь
     '!хепл': 'Вывести список всех доступных команд.',
   }
-  
   client.on('message', message => {
     if (message.author.bot) return;
   
@@ -66,6 +65,7 @@ const commands = {
         '!бизнес -Увидеть информацию о бизнесе. Работает только в канале https://discord.com/channels/975678659631382548/1135273027525951549',
         '!едитдом - Изменить владельца дома. Работает только в канале https://discord.com/channels/975678659631382548/1135273027525951549',
         '!едитбизнес - Изменить владельца бизнеса. Работает только в канале https://discord.com/channels/975678659631382548/1135273027525951549',
+        '!ресет - Обнуляет статистику игрока. Работает только в канале https://discord.com/channels/975678659631382548/1135228797378105445',
         // Добавьте другие команды здесь
       ];
   
@@ -80,6 +80,23 @@ const commands = {
       message.channel.send(embed);
     }
   });
+const prefix = '!';
+
+client.once('ready', () => {
+  console.log('Bot is online!');
+});
+
+client.on('message', message => {
+  if (!message.content.startsWith(prefix) || message.author.bot) return;
+
+  const args = message.content.slice(prefix.length).trim().split(/ +/);
+  const command = args.shift().toLowerCase();
+
+  if (command === 'ping') {
+    message.channel.send('Pong!');
+  }
+});
+
 client.on('message', async message => {
   if (message.content.startsWith('!запрос')) {
     const args = message.content.split(' ');
@@ -475,6 +492,7 @@ if (message.content.startsWith('!банлист')) {
     );
   }
 });
+
 client.on('message', message => {
   if (message.author.bot) return;
 
@@ -563,6 +581,41 @@ client.on('message', message => {
 
   // Остальные команды...
 });
+client.on('message', async message => {
+  // Проверяем, имеет ли пользователь требуемую роль
+  if (message.content.startsWith('!ресет')) {
+    const args = message.content.split(' ');
+    const nickName = args[1];
+    const requiredRoleId = '975678764900040704'; // Здесь замените на ID требуемой роли
+    const hasRequiredRole = message.member.roles.cache.has(requiredRoleId);
+
+    if (!hasRequiredRole) {
+      return;
+    }
+
+    if (!nickName) {
+      message.channel.send('Укажите NickName игрока для сброса статистики.');
+      return;
+    }
+
+    // Выполняем запрос к базе данных для обнуления статистики игрока
+    const query = 'UPDATE Qelksekm SET Level = 1, Admin = 0, FullDostup = 0, Money = 0, Bank = 0, DonateMoney = 0, VirMoney = 0, InvItem = "312" WHERE NickName = ?';
+    connection.query(query, [nickName], (err, result) => {
+      if (err) {
+        console.error('Ошибка при выполнении запроса: ', err);
+        return;
+      }
+
+      if (result.affectedRows === 0) {
+        message.channel.send(`Игрок с NickName "${nickName}" не найден.`);
+        return;
+      }
+
+      message.channel.send(`Статистика игрока ${nickName} была успешно обновлена. Значения обнулены.`);
+    });
+  }
+});
+
 
 
   client.on('message', message => {
@@ -1178,7 +1231,14 @@ client.on('guildMemberAdd', member =>{ // ивент, когда пользов�
     member.send(embed);
     client.channels.cache.get('975681053874331670').send(embed2) // айди вашего канала с логами
 })
-
+const express = require('express');
+const app = express();
+const port = 3000;
+ 
+ 
+app.get('/', function(request, response){ response.send(`Монитор активен. Локальный адрес: http://localhost:${port}`); });
+app.listen(port, () => console.log());
+client.login(process.env.DISCORD_TOKEN);
 client.on('guildMemberRemove', member => { // ивент, когда пользователь выходит с сервера https://discord.js.org/#/docs/main/stable/class/Client?scrollTo=e-guildMemberRemove
     let embed = new Discord.MessageEmbed()
     .setThumbnail(member.user.avatarURL())
@@ -1196,7 +1256,7 @@ async function change() {
 
 var interval = setInterval(function () { change(); }, 2000  ); // время обновления в миллисекундах
 
-client.login('OTgzMDg3NDkyMjA5MjA5MzY1.Gux1uS.yx2fO5weKlukRDgNCGXUdFB2VcK5kKD4Y8Z_ro') // токен вашего бота
+client.login('OTgzMDg3NDkyMjA5MjA5MzY1.GUAyCy.csQy6rwdsWoZ4v5eDNh9P89WbWxOI9358ot1QE') // токен вашего бота
 
 
 // Хотите, чтобы ваш бот работал 24/7 бесплатно? Смотрите это видео: https://www.youtube.com/watch?v=wxdl4QK0am4
